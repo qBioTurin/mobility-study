@@ -58,6 +58,8 @@ To reproduce the results presented in the paper run:
 mining. 2016, pp. 785–794. doi: https://doi.org/10.1145/2939672.2939785.
 
 ## COPYRIGHT AND LICENSE
+Copyright _Daniele Baccega, Juan Marcos Ramirez, Jose Aguilar, Antonio Fernández Anta, Carlos Baquero_
+
 ![CC BY-NC-SA 3.0](http://ccl.northwestern.edu/images/creativecommons/byncsa.png)
 
 This work is licensed under the Creative Commons Attribution-NonCommercial-ShareAlike 3.0 License.  To view a copy of this license, visit https://creativecommons.org/licenses/by-nc-sa/3.0/ or send a letter to Creative Commons, 559 Nathan Abbott Way, Stanford, California 94305, USA.
