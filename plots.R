@@ -483,14 +483,14 @@ boxplots <- function(model_data_global){
   
   df$type <- factor(df$type, levels = c("Grocery and pharmacy stores (Google)", "Retail and recreation (Google)", "Workplaces (Google)", "Transit stations (Google)", "Residential (Google)", "Masks (Facebook)", "Complement of Stringency Index (OxCGRT)", "Infection Rates (Sybil)"))
   
-  png("PreliminaryPlots.png", units="in", width=45, height=30, res=150)
+  png("PreliminaryPlots.png", units="in", width=25, height=40, res=150)
   plot <- ggplot(df) +
     geom_boxplot(aes(x=date, y=value, color=type, group=date)) +
     labs(title = "", x = "Date", y = "Value", color = "Type") +
     theme_bw() +
-    facet_wrap(~ type, ncol=2, scales = "free") +
+    facet_wrap(~ type, ncol=1, scales = "free") +
     scale_color_manual(values = c("#2FFFCE", "#c3cb71", "#c9c9ff", "#559e83", "#6B95DB", "#985453", "#ff8b94", "#494949")) +
-    theme(legend.position = "none", axis.text.x = element_text(size = 30, angle = 45, hjust = 1), axis.text.y = element_text(size = 30), legend.key.size = unit(2, 'cm'), axis.text=element_text(size=45), axis.title=element_text(size=40, face="bold"), plot.title = element_text(size=50, face="bold"), legend.title=element_text(size=40, face="bold"), legend.text=element_text(size=25), strip.text.x = element_text(size=40)) +
+    theme(legend.position = "none", axis.text.x = element_text(size = 30, hjust = 1), axis.text.y = element_text(size = 30), legend.key.size = unit(2, 'cm'), axis.text=element_text(size=45), axis.title=element_text(size=40, face="bold"), plot.title = element_text(size=50, face="bold"), legend.title=element_text(size=40, face="bold"), legend.text=element_text(size=25), strip.text.x = element_text(size=40)) +
     guides(color = guide_legend(override.aes = list(size = 16), nrow=3, byrow=TRUE))
   print(plot)
   dev.off()

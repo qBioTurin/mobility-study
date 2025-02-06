@@ -81,9 +81,14 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
     filter(n == nrow(countries))
   
   
+  
+  names(custom_order) <- gsub("United Kingdom", "UK", names(custom_order))
+  
   # Plots ratio from stringency index to infection rates 
   ratio_resinf_all <- ratio_resinf_all %>%
     filter(date %in% dates_count$date)
+  
+  ratio_resinf_all$country <- gsub("United Kingdom", "UK", ratio_resinf_all$country)
   
   png(paste0(dir_name_comparison, "ratio_resinf_all.png"), units="in", width=20, height=25, res=150)
   plot <- ggplot(ratio_resinf_all) +
@@ -103,8 +108,10 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
     geom_raster(aes(x = as.Date(date), y = country, fill = value)) +
     scale_fill_gradientn(colors = moma.colors("Ernst")) +
     theme_bw() +
-    labs(title= "ComplStrIdxOnInfRates(t)", x = "Date", y = "Country", fill="Ratio") +
-    theme(legend.position = "right", title = element_text(size = 34), legend.key.size = unit(2, 'cm'), axis.title = element_text(size = 34), axis.text = element_text(size = 32), legend.title = element_text(size = 30), legend.text = element_text(size = 28))
+    scale_x_date(expand = c(0, 0)) +
+    labs(title= "StringencyOnInfRates(t)", x = "Date", y = "Country", fill="Ratio") +
+    theme(legend.position = "bottom", title = element_text(size = 54, face = "bold"), legend.key.size = unit(3, 'cm'), axis.title = element_text(size = 50), axis.text = element_text(size = 45), legend.title = element_text(size = 50), legend.text = element_text(size = 45)) +
+    guides(fill = guide_colorbar(title.vjust = 0.75))
   print(plot)
   dev.off()
   
@@ -112,6 +119,8 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
   # Plots ratio from average mobility to infection rates
   ratio_mobinf_all <- ratio_mobinf_all %>%
     filter(date %in% dates_count$date)
+  
+  ratio_mobinf_all$country <- gsub("United Kingdom", "UK", ratio_mobinf_all$country)
   
   png(paste0(dir_name_comparison, "ratio_mobinf_all.png"), units="in", width=20, height=25, res=150)
   plot <- ggplot(ratio_mobinf_all) +
@@ -131,8 +140,10 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
     geom_raster(aes(x = as.Date(date), y = country, fill = value)) +
     scale_fill_gradientn(colors = moma.colors("Ernst")) +
     theme_bw() +
-    labs(title = "AvgMobOnInfRates(t)", x = "Date", y = "Country", fill="Ratio") +
-    theme(legend.position = "right", title = element_text(size = 34), legend.key.size = unit(2, 'cm'), axis.title = element_text(size = 34), axis.text = element_text(size = 32), legend.title = element_text(size = 30), legend.text = element_text(size = 28))
+    scale_x_date(expand = c(0, 0)) +
+    labs(title = "MobilityOnInfRates(t)", x = "Date", y = "Country", fill="Ratio") +
+    theme(legend.position = "bottom", title = element_text(size = 54, face = "bold"), legend.key.size = unit(3, 'cm'), axis.title = element_text(size = 50), axis.text = element_text(size = 45), legend.title = element_text(size = 50), legend.text = element_text(size = 45)) +
+    guides(fill = guide_colorbar(title.vjust = 0.75))
   print(plot)
   dev.off()
   
@@ -140,6 +151,8 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
   # Plots ratio from stringency index to average mobility
   ratio_resmob_all <- ratio_resmob_all %>%
     filter(date %in% dates_count$date)
+  
+  ratio_resmob_all$country <- gsub("United Kingdom", "UK", ratio_resmob_all$country)
   
   png(paste0(dir_name_comparison, "ratio_resmob_all.png"), units="in", width=20, height=25, res=150)
   plot <- ggplot(ratio_resmob_all) +
@@ -159,38 +172,81 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
     geom_raster(aes(x = as.Date(date), y = country, fill = value)) +
     scale_fill_gradientn(colors = moma.colors("Ernst")) +
     theme_bw() +
-    labs(title = "ComplStrIdxOnAvgMob(t)", x = "Date", y = "Country", fill="Ratio") +
-    theme(legend.position = "right", title = element_text(size = 34), legend.key.size = unit(2, 'cm'), axis.title = element_text(size = 34), axis.text = element_text(size = 32), legend.title = element_text(size = 30), legend.text = element_text(size = 28))
+    scale_x_date(expand = c(0, 0)) +
+    labs(title = "StringencyOnMobility(t)", x = "Date", y = "Country", fill="Ratio") +
+    theme(legend.position = "bottom", title = element_text(size = 54, face = "bold"), legend.key.size = unit(3, 'cm'), axis.title = element_text(size = 50), axis.text = element_text(size = 45), legend.title = element_text(size = 50), legend.text = element_text(size = 45)) +
+    guides(fill = guide_colorbar(title.vjust = 0.75))
   print(plot)
   dev.off()
 
   
   # Clustering (K-means and CONNECTOR)
   plots <- list()
-  plots <- clustering(ratio_resmob_all, "resmob", 8, c(2, 5, 6), c(2, 3, 5), dir_name_comparison, plots)
-  plots <- clustering(ratio_mobinf_all, "mobinf", 11, c(2, 5, 6), c(2, 5, 6), dir_name_comparison, plots)
-  plots <- clustering(ratio_resinf_all, "resinf", 11, c(2, 5, 6), c(2, 3, 6), dir_name_comparison, plots)
+  silhouette_df <- data.frame(k=NULL, value=NULL, type=NULL, ratio=NULL)
+  data <- clustering(ratio_resmob_all, "resmob", 8, c(2, 5, 6), c(2, 3, 5), dir_name_comparison, plots, silhouette_df)
+  plots <- data[[1]]
+  silhouette_df <- data[[2]]
   
+  data <- clustering(ratio_mobinf_all, "mobinf", 11, c(2, 5, 6), c(2, 5, 6), dir_name_comparison, plots, silhouette_df)
+  plots <- data[[1]]
+  silhouette_df <- data[[2]]
+  
+  data <- clustering(ratio_resinf_all, "resinf", 11, c(2, 5, 6), c(2, 3, 6), dir_name_comparison, plots, silhouette_df)
+  plots <- data[[1]]
+  silhouette_df <- data[[2]]
+
   
 
+  png(paste0(dir_name_comparison, "silhouette_scores.png"), units="in", width=34, height=15, res=300)
+  p <- ggplot(silhouette_df) +
+    geom_line(aes(x=k, y=value, linetype=ratio, color=type), linewidth=3) +
+    theme_bw() +
+    geom_point(aes(x=k, y=value), shape=1, size=8) +
+    scale_linetype_manual(values=c("solid", "dashed", "dotted")) +
+    scale_color_manual(values=c("#559e83", "#ff8b94")) +
+    labs(x = "Number of clusters", y = "Average Silhouette Scores", color="Used data", linetype="Ratio") +
+    theme(legend.position = "bottom", title = element_text(size = 54, face = "bold"), legend.key.size = unit(3, 'cm'), axis.title = element_text(size = 50), axis.text = element_text(size = 45), legend.title = element_text(size = 50), legend.text = element_text(size = 45)) +
+    guides(color = guide_legend(nrow=2, byrow=TRUE), linetype = guide_legend(nrow=2, byrow=TRUE))
+  print(p)
+  dev.off()
+  
   # Clustering plots with K-means
   # Average
-  p <- plots[[1]] / plots[[5]] / plots[[7]] / plots[[9]] / plots[[13]] / plots[[15]] +
+  p <- (plots[[1]] + plots[[5]]) / (plots[[7]] + plots[[9]]) / (plots[[13]] + plots[[15]]) +
     plot_layout(guides = "collect", axis_titles = "collect") &
-    theme(legend.position = "bottom", legend.box = "vertical")
+    theme(legend.position = "bottom", legend.box = "vertical", axis.title = element_blank())
   
-  png(paste0(dir_name_comparison, "clusters_mean.png"), units="in", width=40, height=30, res=300)
+  png(paste0(dir_name_comparison, "clusters_mean.png"), units="in", width=50, height=20, res=300)
   print(p)
   dev.off()
   
   # Average + standard deviation
-  p <- plots[[2]] / plots[[4]] / plots[[8]] / plots[[12]] / plots[[14]] / plots[[18]] +
+  p <- (plots[[2]] + plots[[4]]) / (plots[[8]] + plots[[12]]) / (plots[[14]] + plots[[18]]) +
     plot_layout(guides = "collect", axis_titles = "collect") &
-    theme(legend.position = "bottom", legend.box = "vertical")
+    theme(legend.position = "bottom", legend.box = "vertical", axis.title = element_blank())
   
-  png(paste0(dir_name_comparison, "clusters_meanstd.png"), units="in", width=40, height=30, res=300)
+  png(paste0(dir_name_comparison, "clusters_meanstd.png"), units="in", width=50, height=20, res=300)
   print(p)
   dev.off()
+
+  # # Clustering plots with K-means
+  # # Average
+  # p <- plots[[1]] / plots[[5]] / plots[[7]] / plots[[9]] / plots[[13]] / plots[[15]] +
+  #   plot_layout(guides = "collect", axis_titles = "collect") &
+  #   theme(legend.position = "bottom", legend.box = "vertical")
+  # 
+  # png(paste0(dir_name_comparison, "clusters_mean.png"), units="in", width=40, height=30, res=300)
+  # print(p)
+  # dev.off()
+  # 
+  # # Average + standard deviation
+  # p <- plots[[2]] / plots[[4]] / plots[[8]] / plots[[12]] / plots[[14]] / plots[[18]] +
+  #   plot_layout(guides = "collect", axis_titles = "collect") &
+  #   theme(legend.position = "bottom", legend.box = "vertical")
+  # 
+  # png(paste0(dir_name_comparison, "clusters_meanstd.png"), units="in", width=40, height=30, res=300)
+  # print(p)
+  # dev.off()
 }
 
 # Clustering using K-means and CONNECTOR.
@@ -203,7 +259,7 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
 #   - k_clusters:           selected number of clusters for K-means
 #   - dir_name_comparison:  directory in which save the plots
 #   - plots:                plots
-clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_comparison, plots){
+clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_comparison, plots, silhouette_df){
   pastel_color_colors <- c(
     "#D64D4D",
     "#6FFF6D",
@@ -213,7 +269,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     "#FFB3FC"
   )
   
-  title_mapping <- c("mobinf"="AvgMobOnInfRates(t)", "resmob"="ComplStrIdxOnAvgMob(t)", "resinf"="ComplStrIdxOnInfRates(t)")
+  title_mapping <- c("mobinf"="MobilityOnInfRates(t)", "resmob"="StringencyOnMobility(t)", "resinf"="StringencyOnInfRates(t)")
   
   data_local <- data %>%
     select(country, country_short_col, value) %>%
@@ -239,7 +295,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
   k <- 2:6
   avg_sil <- sapply(k, silhouette_score)
   
-  silhouette_df <- data.frame(k=k, value=avg_sil, type="Mean")
+  silhouette_df <- rbind(silhouette_df, data.frame(k=k, value=avg_sil, type="Mean", ratio=title_mapping[type]))
   
   
   silhouette_score_meanstd <- function(k){
@@ -250,17 +306,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
   k <- 2:6
   avg_sil <- sapply(k, silhouette_score_meanstd)
   
-  silhouette_df <- rbind(silhouette_df, data.frame(k=k, value=avg_sil, type="Mean and std"))
-  
-  png(paste0(dir_name_comparison, "silhouette_scores_", type, ".png"), units="in", width=34, height=15, res=300)
-  p <- ggplot(silhouette_df) +
-    geom_line(aes(x=k, y=value, linetype=type), linewidth=2) +
-    theme_bw() +
-    geom_point(aes(x=k, y=value), shape=1, size=8) +
-    labs(title=title_mapping[type], x = "Number of clusters", y = "Average Silhouette Scores", linetype="Used data:") +
-    theme(legend.key.size = unit(2, 'cm'), legend.position = "bottom", title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
-  print(p)
-  dev.off()
+  silhouette_df <- rbind(silhouette_df, data.frame(k=k, value=avg_sil, type="Mean and std", ratio=title_mapping[type]))
   
   
   for(i in 1:length(k_clusters)){
@@ -270,8 +316,12 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     
     data_local_cluster_mean <- cbind(data_mean, data.frame(kmeans=km.res_mean$cluster))
     data_local_cluster_meanstd <- cbind(data_meanstd, data.frame(kmeans=km.res_meanstd$cluster))
+
     
     
+    data_local_cluster_mean <- data_local_cluster_mean %>%
+      arrange(mean) %>%
+      mutate(vjust = ifelse(row_number() %% 2 == 1, -1.5, 2.5))
     
     centers_mean <- as.data.frame(km.res_mean$centers)
     centers_mean$kmeans <- rownames(centers_mean)
@@ -280,7 +330,10 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     centers_mean$source <- "Centroids"
     centers_mean$country <- ""
     centers_mean$country_short_col <- ""
+    centers_mean$vjust <- 0
     combined_data <- rbind(data_local_cluster_mean, centers_mean)
+    
+    
     
     cluster_sizes <- data_local_cluster_mean %>%
       group_by(kmeans) %>%
@@ -291,21 +344,21 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     
     png(paste0(dir_name_comparison, "kmeans_", type, "_", k_clusters[i], "_mean.png"), unit="in", width=40, height=5, res=150)
     p <- ggplot(data=combined_data, aes(x = mean, y = 0, color = as.factor(kmeans))) +
-      geom_point(data=data_local_cluster_mean, aes(shape = "Data"), size = 20, alpha = 0.7) +
-      geom_point(data=centers_mean, aes(shape = "Centroids"), size = 20, stroke = 4) +
-      geom_text(data = combined_data, aes(label = country_short_col), vjust = -2, hjust = 0.5, size = 10, color = "black") +
+      geom_point(data=data_local_cluster_mean, aes(shape = "Data"), size = 25, alpha = 0.7) +
+      geom_point(data=centers_mean, aes(shape = "Centroids"), size = 25, stroke = 4) +
+      geom_text(data = combined_data, aes(label = country_short_col, vjust = vjust), hjust = 0.5, size = 13, color = "black") +
       theme_minimal() +
-      labs(title=paste0(title_mapping[type], " ", k_clusters[i], " clusters"), x = "Mean", y = "", color = "Cluster", shape = "Type") +
+      labs(title=paste0(title_mapping[type], ", ", k_clusters[i], " clusters"), x = "Mean", y = "", color = "Cluster", shape = "Type") +
       scale_shape_manual(values = c("Data" = 16, "Centroids" = 4)) +
       scale_color_manual(values = pastel_color_colors) +
       theme(
         legend.position = "bottom",
         legend.box = "vertical",
-        plot.title = element_text(size = 40, face = "bold", hjust = 0.5),
-        axis.title = element_text(size = 45, face = "bold"),
-        axis.text = element_text(size = 35),
-        legend.title = element_text(size = 45, face = "bold"),
-        legend.text = element_text(size = 40),
+        plot.title = element_text(size = 54, face = "bold", hjust = 0.5),
+        axis.title = element_text(size = 50, face = "bold"),
+        axis.text = element_text(size = 45),
+        legend.title = element_text(size = 50, face = "bold"),
+        legend.text = element_text(size = 45),
         axis.text.y = element_blank()
       ) +
       xlim(min(data_local_cluster_mean$mean), max(data_local_cluster_mean$mean)) +
@@ -313,6 +366,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     print(p)
     dev.off()
     
+
     plots[[length(plots) + 1]] <- p
     
     colnames(data_local_cluster_mean)[colnames(data_local_cluster_mean) == "kmeans"] <- paste0("kmeans", k_clusters[i])
@@ -332,17 +386,17 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     
     png(paste0(dir_name_comparison, "kmeans_", type, "_", k_clusters[i], "_meanstd.png"), unit="in", width=40, height=10, res=150)
     p <- ggplot(data=combined_data, aes(x = mean, y = std, color = as.factor(kmeans))) +
-      geom_point(data=data_local_cluster_meanstd, aes(shape = "Data"), size = 20, alpha = 0.7) +
+      geom_point(data=data_local_cluster_meanstd, aes(shape = "Data"), size = 25, alpha = 0.7) +
       geom_point(
         data = centers_meanstd,
         aes(x = mean, y = std, shape = "Centroids"),
-        size = 20,
+        size = 25,
         stroke = 4
       ) +
-      geom_text(data = combined_data, aes(label = country_short_col), vjust = -2, hjust = 0.5, size = 10, color = "black") +
+      geom_text(data = combined_data, aes(label = country_short_col), hjust = 0.5, size = 13, color = "black") +
       theme_minimal() +
       labs(
-        title=paste0(title_mapping[type], " ", k_clusters[i], " clusters"),
+        title=paste0(title_mapping[type], ", ", k_clusters[i], " clusters"),
         x = "Mean",
         y = "Standard Deviation",
         color = "Cluster",
@@ -353,11 +407,11 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
       theme(
         legend.position = "bottom",
         legend.box = "vertical",
-        plot.title = element_text(size = 40, face = "bold", hjust = 0.5),
-        axis.title = element_text(size = 45, face = "bold"),
-        axis.text = element_text(size = 35),
-        legend.title = element_text(size = 45, face = "bold"),
-        legend.text = element_text(size = 40)
+        plot.title = element_text(size = 54, face = "bold", hjust = 0.5),
+        axis.title = element_text(size = 50, face = "bold"),
+        axis.text = element_text(size = 45),
+        legend.title = element_text(size = 50, face = "bold"),
+        legend.text = element_text(size = 45)
       ) +
       ylim(min(data_local_cluster_meanstd$std) - 0.3, max(data_local_cluster_meanstd$std) + 0.3) +
       xlim(min(data_local_cluster_meanstd$mean), max(data_local_cluster_meanstd$mean)) +
@@ -374,69 +428,69 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
   
   
   # Clustering with CONNECTOR
-  data_local <- data %>%
-    mutate(ID = recode(country, !!!custom_order), Observation = value, Time = date) %>%
-    select(ID, Observation, Time)
-  data_local$Time <- as.numeric(data_local$Time)
-  data_ann <- data.frame(ID=unname(custom_order), Country=names(custom_order), row.names = NULL)
+  # data_local <- data %>%
+  #   mutate(ID = recode(country, !!!custom_order), Observation = value, Time = date) %>%
+  #   select(ID, Observation, Time)
+  # data_local$Time <- as.numeric(data_local$Time)
+  # data_ann <- data.frame(ID=unname(custom_order), Country=names(custom_order), row.names = NULL)
+  # 
+  # CONNECTORList <- DataFrameImport(data_local, data_ann)
+  # 
+  # CrossLogLike <- BasisDimension.Choice(data = CONNECTORList,
+  #                                       p = 2:12)
+  # 
+  # png(paste0(dir_name_comparison, "CrossLogLikePlot_", type, ".png"), units="in", width=34, height=15, res=300)
+  # p <- ggplot_build(CrossLogLike$CrossLogLikePlot)
+  # p$plot <- p$plot +
+  #   labs(title = paste0("Cross-LogLikelihood Plot (", title_mapping[type], ")")) +
+  #   theme(title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
+  #   print(p$plot)
+  # dev.off()
+  # 
+  # 
+  # # Best value selected from BasisDimension.Choice(data = CONNECTORList, p = 2:12)
+  # ClusteringList <-ClusterAnalysis(CONNECTORList,
+  #                                  G=2:6,
+  #                                  p=p_selected,
+  #                                  runs=50,
+  #                                  Cores=4)
+  # 
+  # IndexesPlot.Extrapolation(ClusteringList)-> indexes
+  # 
+  # png(paste0(dir_name_comparison, "indexesPlot_", type, ".png"), units="in", width=34, height=15, res=300)
+  # p <- ggplot_build(indexes$Plot)
+  # p$plot <- p$plot +
+  #   labs(title = title_mapping[type]) +
+  #   theme(title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
+  # print(p$plot)
+  # dev.off()
+  # 
+  # ConsMatrix<-ConsMatrix.Extrapolation(stability.list = ClusteringList)
+  # 
+  # 
+  # for(i in 1:length(G_clusters)){
+  #   png(paste0(dir_name_comparison, "G", G_clusters[i], "_", type, ".png"), units="in", width=34, height=15, res=300)
+  #   p <- ggplot_build(ConsMatrix[[paste0("G", G_clusters[i])]]$ConsensusPlot)
+  #   p$plot <- p$plot +
+  #     theme(legend.key.size = unit(1.5, 'cm'), title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
+  #   print(p$plot)
+  #   dev.off()
+  # 
+  #   CONNECTORList.FCM.opt <- MostProbableClustering.Extrapolation(
+  #     stability.list = ClusteringList,
+  #     G = G_clusters[i])
+  # 
+  #   FCMplots <- ClusterWithMeanCurve(clusterdata = CONNECTORList.FCM.opt,
+  #                                    feature = "Country",
+  #                                    labels = c("Day", "Ratio"))
+  # 
+  #   png(paste0(dir_name_comparison, "clustering_connector_", type, "_", G_clusters[i], ".png"), units="in", width=34, height=15, res=300)
+  #   plot <- FCMplots$plotsCluster$ALL +
+  #     labs(title = paste0("Other parameters p = ", p_selected, ", h = ", G_clusters[i] - 1, ", G = ", G_clusters[i], " (", title_mapping[type], ")")) +
+  #     theme(title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24), strip.text.x = element_text(size=30))
+  #   print(plot)
+  #   dev.off()
+  # }
 
-  CONNECTORList <- DataFrameImport(data_local, data_ann)
-
-  CrossLogLike <- BasisDimension.Choice(data = CONNECTORList,
-                                        p = 2:12)
-
-  png(paste0(dir_name_comparison, "CrossLogLikePlot_", type, ".png"), units="in", width=34, height=15, res=300)
-  p <- ggplot_build(CrossLogLike$CrossLogLikePlot)
-  p$plot <- p$plot +
-    labs(title = paste0("Cross-LogLikelihood Plot (", title_mapping[type], ")")) +
-    theme(title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
-    print(p$plot)
-  dev.off()
-
-  
-  # Best value selected from BasisDimension.Choice(data = CONNECTORList, p = 2:12)
-  ClusteringList <-ClusterAnalysis(CONNECTORList,
-                                   G=2:6,
-                                   p=p_selected,
-                                   runs=50,
-                                   Cores=4)
-
-  IndexesPlot.Extrapolation(ClusteringList)-> indexes
-
-  png(paste0(dir_name_comparison, "indexesPlot_", type, ".png"), units="in", width=34, height=15, res=300)
-  p <- ggplot_build(indexes$Plot)
-  p$plot <- p$plot +
-    labs(title = title_mapping[type]) +
-    theme(title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
-  print(p$plot)
-  dev.off()
-
-  ConsMatrix<-ConsMatrix.Extrapolation(stability.list = ClusteringList)
-
-
-  for(i in 1:length(G_clusters)){
-    png(paste0(dir_name_comparison, "G", G_clusters[i], "_", type, ".png"), units="in", width=34, height=15, res=300)
-    p <- ggplot_build(ConsMatrix[[paste0("G", G_clusters[i])]]$ConsensusPlot)
-    p$plot <- p$plot +
-      theme(legend.key.size = unit(1.5, 'cm'), title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
-    print(p$plot)
-    dev.off()
-
-    CONNECTORList.FCM.opt <- MostProbableClustering.Extrapolation(
-      stability.list = ClusteringList,
-      G = G_clusters[i])
-
-    FCMplots <- ClusterWithMeanCurve(clusterdata = CONNECTORList.FCM.opt,
-                                     feature = "Country",
-                                     labels = c("Day", "Ratio"))
-
-    png(paste0(dir_name_comparison, "clustering_connector_", type, "_", G_clusters[i], ".png"), units="in", width=34, height=15, res=300)
-    plot <- FCMplots$plotsCluster$ALL +
-      labs(title = paste0("Other parameters p = ", p_selected, ", h = ", G_clusters[i] - 1, ", G = ", G_clusters[i], " (", title_mapping[type], ")")) +
-      theme(title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24), strip.text.x = element_text(size=30))
-    print(plot)
-    dev.off()
-  }
-
-  return(plots)
+  return(list(plots, silhouette_df))
 }
