@@ -410,7 +410,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
       guides(fill = "none", color = if(k_clusters[i] != 6) "none")
     print(p)
     dev.off()
-    
+    1
     plots[[length(plots) + 1]] <- p
     
     colnames(data_local_cluster_meanstd)[colnames(data_local_cluster_meanstd) == "kmeans"] <- paste0("kmeans", k_clusters[i])
@@ -418,6 +418,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
   }
   
   
+  names(custom_order)[6] <- "UK"
   
   # Clustering with CONNECTOR
   data_local <- data %>%
@@ -445,7 +446,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
                                    G=2:6,
                                    p=p_selected,
                                    runs=50,
-                                   Cores=4)
+                                   Cores=8)
 
   IndexesPlot.Extrapolation(ClusteringList)-> indexes
 
@@ -453,7 +454,14 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
   p <- ggplot_build(indexes$Plot)
   p$plot <- p$plot +
     labs(title = title_mapping[type]) +
-    theme(title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
+    theme(legend.position = "bottom",
+          legend.box = "vertical",
+          plot.title = element_text(size = 54, face = "bold", hjust = 0.5),
+          axis.title = element_text(size = 50, face = "bold"),
+          axis.text = element_text(size = 45),
+          legend.title = element_text(size = 50, face = "bold"),
+          legend.text = element_text(size = 45),
+          strip.text.x = element_text(size = 35))
   print(p$plot)
   dev.off()
 
@@ -464,7 +472,13 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     png(paste0(dir_name_comparison, "G", G_clusters[i], "_", type, ".png"), units="in", width=34, height=15, res=300)
     p <- ggplot_build(ConsMatrix[[paste0("G", G_clusters[i])]]$ConsensusPlot)
     p$plot <- p$plot +
-      theme(legend.key.size = unit(1.5, 'cm'), title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24))
+      theme(legend.position = "bottom",
+            legend.box = "vertical",
+            plot.title = element_text(size = 54, face = "bold", hjust = 0.5),
+            axis.title = element_text(size = 50, face = "bold"),
+            axis.text = element_text(size = 45),
+            legend.title = element_text(size = 50, face = "bold"),
+            legend.text = element_text(size = 45))
     print(p$plot)
     dev.off()
 
@@ -475,11 +489,32 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     FCMplots <- ClusterWithMeanCurve(clusterdata = CONNECTORList.FCM.opt,
                                      feature = "Country",
                                      labels = c("Day", "Ratio"))
-
+    
+    CONNECTORList.FCM.opt$FCM$cluster$ClustCurve <- CONNECTORList.FCM.opt$FCM$cluster$ClustCurve %>%
+      mutate(ID = names(custom_order)[ID], Time = as.Date(Time), Cluster = CONNECTORList.FCM.opt$FCM$cluster$cluster.names[Cluster])
+    
+    CONNECTORList.FCM.opt$FCM$cluster$meancurves <- CONNECTORList.FCM.opt$FCM$cluster$meancurves %>%
+      pivot_longer(cols = -Time, names_to = "Cluster", values_to = "Value") %>%
+      mutate(Time = as.Date(Time))
+    
     png(paste0(dir_name_comparison, "clustering_connector_", type, "_", G_clusters[i], ".png"), units="in", width=34, height=15, res=300)
-    plot <- FCMplots$plotsCluster$ALL +
-      labs(title = paste0("Other parameters p = ", p_selected, ", h = ", G_clusters[i] - 1, ", G = ", G_clusters[i], " (", title_mapping[type], ")")) +
-      theme(title = element_text(size = 34), axis.title = element_text(size = 26), axis.text = element_text(size = 22), legend.title = element_text(size = 30), legend.text = element_text(size = 24), strip.text.x = element_text(size=30))
+    plot <- ggplot() +
+      geom_line(data=CONNECTORList.FCM.opt$FCM$cluster$ClustCurve, aes(x=Time, y=Observation, color=ID), linewidth=1.5) +
+      geom_line(data=CONNECTORList.FCM.opt$FCM$cluster$meancurves, aes(x=Time, y=Value, linetype=Cluster), linewidth=1.5) +
+      facet_wrap(~Cluster, ncol = 3) +
+      theme_bw() +
+      scale_color_manual(values=moma.colors("Warhol", 13, type="discrete")) +
+      labs(title = paste0(title_mapping[type], ", ", G_clusters[i], " clusters"), color="Country") +
+      theme(legend.position = "bottom",
+            legend.box = "vertical",
+            legend.key.size = unit(1.5, 'cm'),
+            strip.text.x = element_text(size = 35),
+            plot.title = element_text(size = 54, face = "bold", hjust = 0.5),
+            axis.title = element_text(size = 50, face = "bold"),
+            axis.text = element_text(size = 35),
+            legend.title = element_text(size = 50, face = "bold"),
+            legend.text = element_text(size = 45)) +
+      guides(linetype = "none")
     print(plot)
     dev.off()
   }
