@@ -311,14 +311,12 @@ load_Facebook_mobility_data <- function(country_long, dir_name_backup, country_s
              transit_stations = rollmean(C0_6.1 / (C0_6.1 + C0_6.2), k, align = "center", na.pad = TRUE),
              retail_and_recreation = rollmean((C0_3.1 + C0_5.1) / (C0_3.1 + C0_3.2 + C0_5.1 + C0_5.2), k, align = "center", na.pad = TRUE),
              masks = rollmean(1- ((1 * C5.1 + 0.75 * C5.2 + 0.5 * C5.3 + 0.25 * C5.4 + 0 * C5.5) / (C5.1 + C5.2 + C5.3 + C5.4 + C5.5)), k, align = "center", na.pad = TRUE),
-             direct_contacts = rollmean((2.5 * C2.1 + 7 * C2.2 + 14.5 * C2.3 + 20 * C2.4) / (2.5 * C2.1 + 7 * C2.2 + 14.5 * C2.3 + 20 * C2.4 + C2.NA), k, align = "center", na.pad = TRUE),
              people_slept = rollmean(1 - Finished / E5, k, align = "center", na.pad = TRUE),
              num_rooms = rollmean(1 - Finished / E7, k, align = "center", na.pad = TRUE)) %>%
       filter(date >= global_initial_date, date <= global_final_date)
     
     response_Facebook$num_rooms[which(is.infinite(response_Facebook$num_rooms) | response_Facebook$num_rooms < 0)] <- NA
-    response_Facebook$direct_contacts[response_Facebook$direct_contacts <= 0] <- NA
-    
+
     response_Facebook <- merge(data.frame(date=seq.Date(global_initial_date, global_final_date, 1)), response_Facebook, by="date", all=TRUE)
     
     response_Facebook <- response_Facebook %>%
