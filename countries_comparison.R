@@ -313,6 +313,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     centers_mean$country_short_col <- ""
     centers_mean$vjust <- 0
     combined_data <- rbind(data_local_cluster_mean, centers_mean)
+    combined_data$country_short_col[which(combined_data$country_short_col == "GB")] <- "UK"
     
     
     
@@ -375,6 +376,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
     centers_meanstd$country_short_col <- ""
     centers_meanstd$vjust <- 0
     combined_data <- rbind(data_local_cluster_meanstd, centers_meanstd)
+    combined_data$country_short_col[which(combined_data$country_short_col == "GB")] <- "UK"
     
     png(paste0(dir_name_comparison, "kmeans_", type, "_", k_clusters[i], "_meanstd.png"), unit="in", width=40, height=10, res=150)
     p <- ggplot(data=combined_data, aes(x = mean, y = std, color = as.factor(kmeans))) +
@@ -410,7 +412,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
       guides(fill = "none", color = if(k_clusters[i] != 6) "none")
     print(p)
     dev.off()
-    1
+    
     plots[[length(plots) + 1]] <- p
     
     colnames(data_local_cluster_meanstd)[colnames(data_local_cluster_meanstd) == "kmeans"] <- paste0("kmeans", k_clusters[i])

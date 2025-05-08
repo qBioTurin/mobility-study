@@ -463,35 +463,93 @@ IFR_plot <- function(dir_name, country_short, country_long, internal_dir_name, g
 #
 # Inputs:
 #   - model_data_global:  data
-boxplots <- function(model_data_global){
+boxplots <- function(model_data_global) {
+  # Prepare data by selecting relevant columns and transforming StringencyIndex_Average
   model_data_global <- model_data_global %>%
-    select(date, residential, workplaces, transit_stations, retail_and_recreation, grocery_and_pharmacy_stores, masks, StringencyIndex_Average, infection_rates)
+    select(date, residential, workplaces, transit_stations, retail_and_recreation, 
+           grocery_and_pharmacy_stores, masks, StringencyIndex_Average, infection_rates) %>%
+    mutate(StringencyIndex_Average = 1 - StringencyIndex_Average / 100)
   
-  model_data_global$StringencyIndex_Average <- 1 - model_data_global$StringencyIndex_Average / 100
+  # Pivot data into long format and rename factors for better readability
+  df <- model_data_global %>%
+    pivot_longer(cols = -date, names_to = "type", values_to = "value") %>%
+    mutate(type = recode(type,
+                         residential = "Residential (Google)",
+                         transit_stations = "Transit stations (Google)",
+                         retail_and_recreation = "Retail and recreation (Google)",
+                         grocery_and_pharmacy_stores = "Grocery and pharmacy stores (Google)",
+                         masks = "Masks (Facebook)",
+                         StringencyIndex_Average = "Complement of Stringency Index (OxCGRT)",
+                         workplaces = "Workplaces (Google)",
+                         infection_rates = "Infection Rates (Sybil)"),
+           type = factor(type, levels = c(
+             "Grocery and pharmacy stores (Google)", "Retail and recreation (Google)", "Workplaces (Google)",
+             "Transit stations (Google)", "Residential (Google)", "Masks (Facebook)",
+             "Complement of Stringency Index (OxCGRT)", "Infection Rates (Sybil)"
+           )))
   
-  df <- pivot_longer(model_data_global, cols = c(residential, workplaces, transit_stations, retail_and_recreation, grocery_and_pharmacy_stores, masks, StringencyIndex_Average, infection_rates), 
-                     names_to = "type", values_to = "value")
+  # Define color map for each variable
+  color_map <- c(
+    "Grocery and pharmacy stores (Google)" = "#2FFFCE",
+    "Retail and recreation (Google)" = "#c3cb71",
+    "Workplaces (Google)" = "#c9c9ff",
+    "Transit stations (Google)" = "#559e83",
+    "Residential (Google)" = "#6B95DB",
+    "Masks (Facebook)" = "#985453",
+    "Complement of Stringency Index (OxCGRT)" = "#ff8b94",
+    "Infection Rates (Sybil)" = "#494949"
+  )
   
-  df$type[which(df$type == "residential")] <- "Residential (Google)"
-  df$type[which(df$type == "transit_stations")] <- "Transit stations (Google)"
-  df$type[which(df$type == "retail_and_recreation")] <- "Retail and recreation (Google)"
-  df$type[which(df$type == "grocery_and_pharmacy_stores")] <- "Grocery and pharmacy stores (Google)"
-  df$type[which(df$type == "masks")] <- "Masks (Facebook)"
-  df$type[which(df$type == "StringencyIndex_Average")] <- "Complement of Stringency Index (OxCGRT)"
-  df$type[which(df$type == "workplaces")] <- "Workplaces (Google)"
-  df$type[which(df$type == "infection_rates")] <- "Infection Rates (Sybil)"
+  # Define scale groups and their limits
+  scale_groups <- list(
+    fixed = list(vars = c("Residential (Google)", "Transit stations (Google)", "Retail and recreation (Google)", 
+                          "Workplaces (Google)", "Grocery and pharmacy stores (Google)"), limits = c(-0.8, 0.7)),
+    unit = list(vars = c("Masks (Facebook)", "Complement of Stringency Index (OxCGRT)"), limits = c(0, 1)),
+    free = list(vars = c("Infection Rates (Sybil)"), limits = NULL)
+  )
   
-  df$type <- factor(df$type, levels = c("Grocery and pharmacy stores (Google)", "Retail and recreation (Google)", "Workplaces (Google)", "Transit stations (Google)", "Residential (Google)", "Masks (Facebook)", "Complement of Stringency Index (OxCGRT)", "Infection Rates (Sybil)"))
+  # Define range for dates
+  range_dates <- c(min(model_data_global$date) - 10, max(model_data_global$date) + 10)
   
-  png("PreliminaryPlots.png", units="in", width=25, height=40, res=150)
-  plot <- ggplot(df) +
-    geom_boxplot(aes(x=date, y=value, color=type, group=date)) +
-    labs(title = "", x = "Date", y = "Value", color = "Type") +
-    theme_bw() +
-    facet_wrap(~ type, ncol=1, scales = "free") +
-    scale_color_manual(values = c("#2FFFCE", "#c3cb71", "#c9c9ff", "#559e83", "#6B95DB", "#985453", "#ff8b94", "#494949")) +
-    theme(legend.position = "none", axis.text.x = element_text(size = 30, hjust = 1), axis.text.y = element_text(size = 30), legend.key.size = unit(2, 'cm'), axis.text=element_text(size=45), axis.title=element_text(size=40, face="bold"), plot.title = element_text(size=50, face="bold"), legend.title=element_text(size=40, face="bold"), legend.text=element_text(size=25), strip.text.x = element_text(size=40)) +
-    guides(color = guide_legend(override.aes = list(size = 16), nrow=3, byrow=TRUE))
-  print(plot)
+  # Function to create a plot for each variable with its corresponding y-limits
+  make_plot <- function(var_name, y_limits = NULL) {
+    p <- ggplot(df %>% filter(type == var_name)) +
+      geom_boxplot(aes(x = date, y = value, color = type, group = date)) +
+      scale_color_manual(values = color_map) +
+      scale_x_date(limits = range_dates, expand = c(0, 0)) +
+      theme_bw() +
+      theme(
+        legend.position = "none",
+        axis.text.x = element_text(size = 45, hjust = 1),
+        axis.text.y = element_text(size = 50),
+        title = element_text(size = 60),
+        axis.title = element_text(size = 55, face = "bold"),
+        strip.text.x = element_text(size = 60)
+      ) +
+      labs(x = "Date", y = "Value", title = var_name)
+    
+    # Adjust y-axis scale if limits are provided
+    if (!is.null(y_limits)) {
+      p <- p + scale_y_continuous(limits = y_limits)
+    }
+    
+    # Add horizontal line for certain plots (i.e., fixed scale vars)
+    if (var_name %in% scale_groups$fixed$vars) {
+      p <- p + geom_hline(yintercept = 0, linetype = "dotted", size = 2)
+    }
+    
+    return(p)
+  }
+  
+  # Generate plots for all variables in scale groups
+  plots <- c(
+    lapply(scale_groups$fixed$vars, make_plot, y_limits = scale_groups$fixed$limits),
+    lapply(scale_groups$unit$vars, make_plot, y_limits = scale_groups$unit$limits),
+    lapply(scale_groups$free$vars, make_plot)
+  )
+  
+  # Save combined plots as a single PNG file (2 plots per row)
+  png("PreliminaryPlots.png", units = "in", width = 80, height = 40, res = 150)
+  print(wrap_plots(plots, ncol = 2) + plot_layout(guides = "collect", axis_titles = "collect", axes = "collect_x"))
   dev.off()
 }
