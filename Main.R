@@ -487,7 +487,7 @@ dev.off()
 boxplots(model_data_global)
 
 # Ratios and clustering
-countries_comparison(dir_name_countries_comparison, dir_name_models, countries, custom_order, data_countries)
+countries_comparison(dir_name_countries_comparison, dir_name_models, countries, custom_order, data_countries, corr_method)
 
 # XGBoost study (100% training for feature importance)
 xgboost_study(xgboost_fromrestomob_barplot, xgboost_fromobtoinfrates_barplot, dir_name_regression_plots_xgboost_fromrestomob, dir_name_regression_plots_xgboost_fromobtoinfrates, custom_order)

@@ -6,7 +6,7 @@
 #   - countries:           considered countries
 #   - custom_order:        custom countries order
 #   - data_countries:      country data
-countries_comparison <- function(dir_name_comparison, dir_name_models, countries, custom_order, data_countries){
+countries_comparison <- function(dir_name_comparison, dir_name_models, countries, custom_order, data_countries, method){
   ratio_resinf_all <- data.frame(date=NULL, value=NULL, country=NULL, country_short_col=NULL)
   ratio_mobinf_all <- data.frame(date=NULL, value=NULL, country=NULL, country_short_col=NULL)
   ratio_resmob_all <- data.frame(date=NULL, value=NULL, country=NULL, country_short_col=NULL)
@@ -75,12 +75,210 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
     ratio_resmob_all <- rbind(ratio_resmob_all, ratio_resmob)
   }
   
+  # Statistics on the three ratios
+  # Correlation among them
+  ratio_resmob_all_avg <- ratio_resmob_all %>%
+    group_by(date) %>%
+    summarise(
+      mean_value = mean(value, na.rm = TRUE),
+      sd = sd(value, na.rm = TRUE)) %>%
+    mutate(type = "StringencyOnMobility(t)")
+  
+  # Repeat same structure for other ratios
+  ratio_mobinf_all_avg <- ratio_mobinf_all %>% 
+    group_by(date) %>%
+    summarise(mean_value = mean(value, na.rm = TRUE),
+              sd = sd(value, na.rm = TRUE)) %>%
+    mutate(type = "MobilityOnInfRates(t)")
+  
+  ratio_resinf_all_avg <- ratio_resinf_all %>% 
+    group_by(date) %>%
+    summarise(mean_value = mean(value, na.rm = TRUE),
+              sd = sd(value, na.rm = TRUE)) %>%
+    mutate(type = "StringencyOnInfRates(t)")
+  
+  corr_resmob_mobinf <- cor(ratio_resmob_all_avg$mean_value, ratio_mobinf_all_avg$mean_value, method = method)
+  corr_resmob_resinf <- cor(ratio_resmob_all_avg$mean_value, ratio_resinf_all_avg$mean_value, method = method)
+  corr_mobinf_resinf <- cor(ratio_mobinf_all_avg$mean_value, ratio_resinf_all_avg$mean_value, method = method)
+  
+  ratios_df <- rbind(ratio_resmob_all_avg, ratio_mobinf_all_avg, ratio_resinf_all_avg)
+  
+  ratios_df$type <- factor(ratios_df$type, levels = c("StringencyOnMobility(t)", "MobilityOnInfRates(t)", "StringencyOnInfRates(t)"))
+  
+  ## Updated Visualization
+  png(paste0(dir_name_comparison, "ratios.png"), units="in", width=40, height=20, res=150)
+  plot <- ggplot(ratios_df) +
+    geom_line(aes(x = as.Date(date), y = mean_value, color = type), linewidth = 1.5) +
+    geom_ribbon(aes(x = as.Date(date), 
+                    ymin = mean_value-sd, 
+                    ymax = mean_value+sd, 
+                    fill = type), 
+                alpha = 0.2) +
+    theme_bw() +
+    labs(x = "Date", y = "Value", color = "Ratio", fill = "Ratio") +
+    scale_color_manual(values = c("#ff8b94", "lightgreen", "#6B95DB")) +
+    scale_fill_manual(values = c("#ff8b94", "lightgreen", "#6B95DB")) +
+    ylim(0, 8.20) +
+    theme(legend.position = "bottom", title = element_text(size = 54, face = "bold"), legend.key.size = unit(3, 'cm'), axis.title = element_text(size = 50), axis.text = element_text(size = 45), legend.title = element_text(size = 50), legend.text = element_text(size = 45))
+    guides(color = guide_legend(override.aes = list(size = 16), nrow=1, byrow=TRUE)) 
+  print(plot)
+  dev.off()
+  
+  # Perform Shapiro-Wilk test
+  resmob_shapiro <- shapiro.test(ratio_resmob_all_avg$mean_value)$p.value
+  resinf_shapiro <- shapiro.test(ratio_resinf_all_avg$mean_value)$p.value
+  mobinf_shapiro <- shapiro.test(ratio_mobinf_all_avg$mean_value)$p.value
+  
+  # Perform the KS test
+  resmob_resinf_ks <- ks.test(ratio_resmob_all_avg$mean_value, ratio_resinf_all_avg$mean_value)$p.value
+  resmob_mobinf_ks <- ks.test(ratio_resmob_all_avg$mean_value, ratio_mobinf_all_avg$mean_value)$p.value
+  mobinf_resinf_ks <- ks.test(ratio_mobinf_all_avg$mean_value, ratio_resinf_all_avg$mean_value)$p.value
+  
+  # Perform Mann-Whitney U test
+  resmob_resinf_wilcox <- wilcox.test(ratio_resmob_all_avg$mean_value, ratio_resinf_all_avg$mean_value)$p.value
+  resmob_mobinf_wilcox <- wilcox.test(ratio_resmob_all_avg$mean_value, ratio_mobinf_all_avg$mean_value)$p.value
+  mobinf_resinf_wilcox <- wilcox.test(ratio_mobinf_all_avg$mean_value, ratio_resinf_all_avg$mean_value)$p.value
+  
+  # Calculate Quartiles for each dataset
+  resmob_q1 <- quantile(ratio_resmob_all_avg$mean_value, 0.25)
+  resmob_q2 <- quantile(ratio_resmob_all_avg$mean_value, 0.50)
+  resmob_q3 <- quantile(ratio_resmob_all_avg$mean_value, 0.75)
+  
+  resinf_q1 <- quantile(ratio_resinf_all_avg$mean_value, 0.25)
+  resinf_q2 <- quantile(ratio_resinf_all_avg$mean_value, 0.50)
+  resinf_q3 <- quantile(ratio_resinf_all_avg$mean_value, 0.75)
+  
+  mobinf_q1 <- quantile(ratio_mobinf_all_avg$mean_value, 0.25)
+  mobinf_q2 <- quantile(ratio_mobinf_all_avg$mean_value, 0.50)
+  mobinf_q3 <- quantile(ratio_mobinf_all_avg$mean_value, 0.75)
+  
+  # Distribution Plot for ratio_resinf_all_avg
+  resinf_lines <- data.frame(
+    xintercept = c(resinf_q1, resinf_q2, resinf_q3, mean(ratio_resinf_all_avg$mean_value)),
+    Statistic = c("Quantiles", "Quantiles", "Quantiles", "Mean")
+  )
+  
+  png(paste0(dir_name_comparison, "ratio_resinf_all_density_cdf.png"), units="in", width=30, height=25, res=150)
+  ratio_resinf_all_avg$cdf <- ecdf(ratio_resinf_all_avg$mean_value)(ratio_resinf_all_avg$mean_value)
+  max_density <- max(density(ratio_resinf_all_avg$mean_value)$y)
+  ratio_resinf_all_avg$cdf_scaled <- ratio_resinf_all_avg$cdf * max_density
+  ratio_resinf_all_avg$curve_type <- "CDF"
+  
+  plot <- ggplot(ratio_resinf_all_avg, aes(x = mean_value)) +
+    geom_density(fill = "#6B95DB", alpha = 0.6) +
+    geom_line(aes(y = cdf_scaled, color = curve_type), size = 1.5) +
+    geom_vline(data = resinf_lines, aes(xintercept = xintercept, linetype = Statistic), color = "black", size = 2) +
+    scale_y_continuous(
+      name = "Density",
+      sec.axis = sec_axis(~ . / max_density, name = "Cumulative Probability")
+    ) +
+    scale_color_manual(name = "Curve", values = c("CDF" = "purple")) +
+    scale_linetype_manual(values = c("Quantiles" = "dashed", "Mean" = "dotted")) +
+    labs(
+      x = "Ratio",
+      title = "Distribution and CDF of StringencyOnInfRates(t)",
+      linetype = "Statistic"
+    ) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom",
+      title = element_text(size = 54, face = "bold"),
+      legend.key.size = unit(3, 'cm'),
+      axis.title = element_text(size = 50),
+      axis.text = element_text(size = 45),
+      legend.title = element_text(size = 50),
+      legend.text = element_text(size = 45)
+    )
+  print(plot)
+  dev.off()
+  
+  # Distribution Plot for ratio_resmob_all_avg
+  resmob_lines <- data.frame(
+    xintercept = c(resmob_q1, resmob_q2, resmob_q3, mean(ratio_resmob_all_avg$mean_value)),
+    Statistic = c("Quantiles", "Quantiles", "Quantiles", "Mean")
+  )
+  
+  png(paste0(dir_name_comparison, "ratio_resmob_all_density_cdf.png"), units="in", width=30, height=25, res=150)
+  ratio_resmob_all_avg$cdf <- ecdf(ratio_resmob_all_avg$mean_value)(ratio_resmob_all_avg$mean_value)
+  max_density <- max(density(ratio_resmob_all_avg$mean_value)$y)
+  ratio_resmob_all_avg$cdf_scaled <- ratio_resmob_all_avg$cdf * max_density
+  ratio_resmob_all_avg$curve_type <- "CDF"
+  
+  plot <- ggplot(ratio_resmob_all_avg, aes(x = mean_value)) +
+    geom_density(fill = "#ff8b94", alpha = 0.6) +
+    geom_line(aes(y = cdf_scaled, color = curve_type), size = 1.5) +
+    geom_vline(data = resmob_lines, aes(xintercept = xintercept, linetype = Statistic), color = "black", size = 2) +
+    scale_y_continuous(
+      name = "Density",
+      sec.axis = sec_axis(~ . / max_density, name = "Cumulative Probability")
+    ) +
+    scale_color_manual(name = "Curve", values = c("CDF" = "purple")) +
+    scale_linetype_manual(values = c("Quantiles" = "dashed", "Mean" = "dotted")) +
+    labs(
+      x = "Ratio",
+      title = "Distribution and CDF of StringencyOnMobility(t)",
+      linetype = "Statistic"
+    ) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom",
+      title = element_text(size = 54, face = "bold"),
+      legend.key.size = unit(3, 'cm'),
+      axis.title = element_text(size = 50),
+      axis.text = element_text(size = 45),
+      legend.title = element_text(size = 50),
+      legend.text = element_text(size = 45)
+    )
+  print(plot)
+  dev.off()
+  
+  # Distribution Plot for ratio_mobinf_all_avg
+  mobinf_lines <- data.frame(
+    xintercept = c(mobinf_q1, mobinf_q2, mobinf_q3, mean(ratio_mobinf_all_avg$mean_value)),
+    Statistic = c("Quantiles", "Quantiles", "Quantiles", "Mean")
+  )
+  
+  png(paste0(dir_name_comparison, "ratio_mobinf_all_density_cdf.png"), units="in", width=30, height=25, res=150)
+  ratio_mobinf_all_avg$cdf <- ecdf(ratio_mobinf_all_avg$mean_value)(ratio_mobinf_all_avg$mean_value)
+  max_density <- max(density(ratio_mobinf_all_avg$mean_value)$y)
+  ratio_mobinf_all_avg$cdf_scaled <- ratio_mobinf_all_avg$cdf * max_density
+  ratio_mobinf_all_avg$curve_type <- "CDF"
+  
+  plot <- ggplot(ratio_mobinf_all_avg, aes(x = mean_value)) +
+    geom_density(fill = "lightgreen", alpha = 0.6) +
+    geom_line(aes(y = cdf_scaled, color = curve_type), size = 1.5) +
+    geom_vline(data = mobinf_lines, aes(xintercept = xintercept, linetype = Statistic), color = "black", size = 2) +
+    scale_y_continuous(
+      name = "Density",
+      sec.axis = sec_axis(~ . / max_density, name = "Cumulative Probability")
+    ) +
+    scale_color_manual(name = "Curve", values = c("CDF" = "purple")) +
+    scale_linetype_manual(values = c("Quantiles" = "dashed", "Mean" = "dotted")) +
+    labs(
+      x = "Ratio",
+      title = "Distribution and CDF of MobilityOnInfRates(t)",
+      linetype = "Statistic"
+    ) +
+    theme_bw() +
+    theme(
+      legend.position = "bottom",
+      title = element_text(size = 54, face = "bold"),
+      legend.key.size = unit(3, 'cm'),
+      axis.title = element_text(size = 50),
+      axis.text = element_text(size = 45),
+      legend.title = element_text(size = 50),
+      legend.text = element_text(size = 45)
+    )
+  print(plot)
+  dev.off()
+  
+  
+  
+  
   dates_count <- ratio_resinf_all %>%
     group_by(date) %>%
     count() %>%
     filter(n == nrow(countries))
-  
-  
   
   names(custom_order) <- gsub("United Kingdom", "UK", names(custom_order))
   
@@ -225,7 +423,7 @@ countries_comparison <- function(dir_name_comparison, dir_name_models, countries
     plot_layout(guides = "collect", axis_titles = "collect") &
     theme(legend.position = "bottom", legend.box = "vertical", axis.title = element_blank())
   
-  png(paste0(dir_name_comparison, "clusters_meanstd.png"), units="in", width=40, height=20, res=300)
+  png(paste0(dir_name_comparison, "clusters_meanstd.png"), units="in", width=40, height=15, res=300)
   print(p)
   dev.off()
 }
@@ -421,7 +619,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
   
   
   names(custom_order)[6] <- "UK"
-  
+
   # Clustering with CONNECTOR
   data_local <- data %>%
     mutate(ID = recode(country, !!!custom_order), Observation = value, Time = date) %>%
@@ -432,7 +630,7 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
   CONNECTORList <- DataFrameImport(data_local, data_ann)
 
   CrossLogLike <- BasisDimension.Choice(data = CONNECTORList,
-                                        p = 2:12)
+                                        p = 2:12, Cores = 8)
 
   png(paste0(dir_name_comparison, "CrossLogLikePlot_", type, ".png"), units="in", width=34, height=15, res=300)
   p <- ggplot_build(CrossLogLike$CrossLogLikePlot)
@@ -490,15 +688,15 @@ clustering <- function(data, type, p_selected, G_clusters, k_clusters, dir_name_
 
     FCMplots <- ClusterWithMeanCurve(clusterdata = CONNECTORList.FCM.opt,
                                      feature = "Country",
-                                     labels = c("Day", "Ratio"))
-    
+                                     labels = c("Day", "Value"))
+
     CONNECTORList.FCM.opt$FCM$cluster$ClustCurve <- CONNECTORList.FCM.opt$FCM$cluster$ClustCurve %>%
       mutate(ID = names(custom_order)[ID], Time = as.Date(Time), Cluster = CONNECTORList.FCM.opt$FCM$cluster$cluster.names[Cluster])
-    
+
     CONNECTORList.FCM.opt$FCM$cluster$meancurves <- CONNECTORList.FCM.opt$FCM$cluster$meancurves %>%
       pivot_longer(cols = -Time, names_to = "Cluster", values_to = "Value") %>%
       mutate(Time = as.Date(Time))
-    
+
     png(paste0(dir_name_comparison, "clustering_connector_", type, "_", G_clusters[i], ".png"), units="in", width=34, height=15, res=300)
     plot <- ggplot() +
       geom_line(data=CONNECTORList.FCM.opt$FCM$cluster$ClustCurve, aes(x=Time, y=Observation, color=ID), linewidth=1.5) +
