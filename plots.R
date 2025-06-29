@@ -61,7 +61,7 @@ mobility_plot <- function(dir_name, dates, restrictions, response, infection_rat
   
   date <- c(rep(dates$date[corr_indeces], 8))
   value <- c(masks_series, residential_series, workplaces_series, transit_stations_series, retail_and_recreation_series, grocery_and_pharmacy_stores_series, infection_rates_series, stringency_index_series)
-  type <- c(rep("Masks (Complement)", length(corr_indeces)), rep("Residential (Complement)", length(corr_indeces)), rep("Workplaces", length(corr_indeces)), rep("Transit stations", length(corr_indeces)), rep("Retail and recreation", length(corr_indeces)), rep("Grocery and pharmacy stores", length(corr_indeces)), rep("Infection rates (similar to Rt)", length(corr_indeces)), rep("Stringency index (Complement)", length(corr_indeces)))
+  type <- c(rep("Masks", length(corr_indeces)), rep("Residential (Complement)", length(corr_indeces)), rep("Workplaces", length(corr_indeces)), rep("Transit stations", length(corr_indeces)), rep("Retail and recreation", length(corr_indeces)), rep("Grocery and pharmacy stores", length(corr_indeces)), rep("Infection rates (similar to Rt)", length(corr_indeces)), rep("Stringency index (Complement)", length(corr_indeces)))
   
   mobilities <- data.frame(date=as.Date(date), value=value, type=type)
   
@@ -474,37 +474,37 @@ boxplots <- function(model_data_global) {
   df <- model_data_global %>%
     pivot_longer(cols = -date, names_to = "type", values_to = "value") %>%
     mutate(type = recode(type,
-                         residential = "Residential (Google)",
-                         transit_stations = "Transit stations (Google)",
-                         retail_and_recreation = "Retail and recreation (Google)",
-                         grocery_and_pharmacy_stores = "Grocery and pharmacy stores (Google)",
-                         masks = "Masks (Facebook)",
+                         residential = "Residential",
+                         transit_stations = "Transit stations",
+                         retail_and_recreation = "Retail and recreation",
+                         grocery_and_pharmacy_stores = "Grocery and pharmacy stores",
+                         masks = "Masks",
                          StringencyIndex_Average = "Complement of Stringency Index (OxCGRT)",
-                         workplaces = "Workplaces (Google)",
+                         workplaces = "Workplaces",
                          infection_rates = "Infection Rates (Sybil)"),
            type = factor(type, levels = c(
-             "Grocery and pharmacy stores (Google)", "Retail and recreation (Google)", "Workplaces (Google)",
-             "Transit stations (Google)", "Residential (Google)", "Masks (Facebook)",
+             "Grocery and pharmacy stores", "Retail and recreation", "Workplaces",
+             "Transit stations", "Residential", "Masks",
              "Complement of Stringency Index (OxCGRT)", "Infection Rates (Sybil)"
            )))
   
   # Define color map for each variable
   color_map <- c(
-    "Grocery and pharmacy stores (Google)" = "#2FFFCE",
-    "Retail and recreation (Google)" = "#c3cb71",
-    "Workplaces (Google)" = "#c9c9ff",
-    "Transit stations (Google)" = "#559e83",
-    "Residential (Google)" = "#6B95DB",
-    "Masks (Facebook)" = "#985453",
+    "Grocery and pharmacy stores" = "#2FFFCE",
+    "Retail and recreation" = "#c3cb71",
+    "Workplaces" = "#c9c9ff",
+    "Transit stations" = "#559e83",
+    "Residential" = "#6B95DB",
+    "Masks" = "#985453",
     "Complement of Stringency Index (OxCGRT)" = "#ff8b94",
     "Infection Rates (Sybil)" = "#494949"
   )
   
   # Define scale groups and their limits
   scale_groups <- list(
-    fixed = list(vars = c("Residential (Google)", "Transit stations (Google)", "Retail and recreation (Google)", 
-                          "Workplaces (Google)", "Grocery and pharmacy stores (Google)"), limits = c(-0.8, 0.7)),
-    unit = list(vars = c("Masks (Facebook)", "Complement of Stringency Index (OxCGRT)"), limits = c(0, 1)),
+    fixed = list(vars = c("Residential", "Transit stations", "Retail and recreation", 
+                          "Workplaces", "Grocery and pharmacy stores"), limits = c(-0.8, 0.7)),
+    unit = list(vars = c("Masks", "Complement of Stringency Index (OxCGRT)"), limits = c(0, 1)),
     free = list(vars = c("Infection Rates (Sybil)"), limits = NULL)
   )
   
@@ -541,6 +541,10 @@ boxplots <- function(model_data_global) {
     return(p)
   }
   
+  png("Stringency.png", units = "in", width = 55, height = 20, res = 50)
+  print(make_plot("Complement of Stringency Index (OxCGRT)", c(0, 1)))
+  dev.off()
+  
   # Generate plots for all variables in scale groups
   plots <- c(
     lapply(scale_groups$fixed$vars, make_plot, y_limits = scale_groups$fixed$limits),
@@ -549,7 +553,7 @@ boxplots <- function(model_data_global) {
   )
   
   # Save combined plots as a single PNG file (2 plots per row)
-  png("PreliminaryPlots.png", units = "in", width = 80, height = 40, res = 150)
+  png("PreliminaryPlots.png", units = "in", width = 70, height = 40, res = 100)
   print(wrap_plots(plots, ncol = 2) + plot_layout(guides = "collect", axis_titles = "collect", axes = "collect_x"))
   dev.off()
 }

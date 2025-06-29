@@ -310,7 +310,7 @@ load_Facebook_mobility_data <- function(country_long, dir_name_backup, country_s
              grocery_and_pharmacy_stores = rollmean(C0_2.1 / (C0_2.1 + C0_2.2), k, align = "center", na.pad = TRUE),
              transit_stations = rollmean(C0_6.1 / (C0_6.1 + C0_6.2), k, align = "center", na.pad = TRUE),
              retail_and_recreation = rollmean((C0_3.1 + C0_5.1) / (C0_3.1 + C0_3.2 + C0_5.1 + C0_5.2), k, align = "center", na.pad = TRUE),
-             masks = rollmean(1- ((1 * C5.1 + 0.75 * C5.2 + 0.5 * C5.3 + 0.25 * C5.4 + 0 * C5.5) / (C5.1 + C5.2 + C5.3 + C5.4 + C5.5)), k, align = "center", na.pad = TRUE),
+             masks = rollmean((1 * C5.1 + 0.75 * C5.2 + 0.5 * C5.3 + 0.25 * C5.4 + 0 * C5.5) / (C5.1 + C5.2 + C5.3 + C5.4 + C5.5), k, align = "center", na.pad = TRUE),
              people_slept = rollmean(1 - Finished / E5, k, align = "center", na.pad = TRUE),
              num_rooms = rollmean(1 - Finished / E7, k, align = "center", na.pad = TRUE)) %>%
       filter(date >= global_initial_date, date <= global_final_date)
