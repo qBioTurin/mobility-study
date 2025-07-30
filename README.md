@@ -59,7 +59,7 @@ To reproduce the results presented in the paper run:
 
 [9] Zahra Mohammadi, Monica Gabriela Cojocaru, and Edward Wolfgang Thommes. “Human behaviour, NPI and mobility reduction effects on COVID-19 transmission in different countries of the world“. In: BMC Public Health 22.1 (2022), p. 1594. DOI: https://doi.org/10.1186/s12889-022-13921-3.
 
-[10] Baccega, D., Aguilar, J., Baquero, C., Fernandez Anta, A., & Ramirez, J. M. (2025). “Social Compliance with NPIs, Mobility Patterns, and Reproduction Number: Lessons from COVID-19 in Europe“. medRxiv, 2025-01.
+[10] D. Baccega, J. Aguilar, C. Baquero, A. F. Anta and J. M. Ramirez, "Social Compliance with NPIs, Mobility Patterns, and Reproduction Number: Lessons from COVID-19 in Europe" in IEEE Access, doi: 10.1109/ACCESS.2025.3586508.
 
 [11] Baccega, D., Castagno, P., Fernández Anta, A. et al. “Enhancing COVID-19 forecasting precision through the integration of compartmental models, machine learning and variants“. Sci Rep 14, 19220 (2024). https://doi.org/10.1038/s41598-024-69660-5
 
